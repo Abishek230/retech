@@ -109,7 +109,6 @@ export class CartService {
         deviceId: row.deviceId,
         sellerId: row.sellerId,
         title: row.title,
-        description: row.description,
         price: row.price,
         condition: row.condition,
         status: row.status,
@@ -144,6 +143,7 @@ export class CartService {
     const listingMap = new Map<string, any>(listings.map((l: any) => [l.id, l]));
 
     const items: CartItemWithDetails[] = [];
+    const validRaw: Array<{ listingId: string; quantity: number }> = [];
     let subtotal = 0;
     let carbonOffsetKg = 0;
 
@@ -160,7 +160,13 @@ export class CartService {
           listing,
           subtotal: itemSubtotal,
         });
+        validRaw.push(raw);
       }
+    }
+
+    // If some raw items were obsolete, prune raw cart in storage
+    if (validRaw.length !== rawItems.length) {
+      await this.persistRawCart(userId, validRaw);
     }
 
     const platformFee = Math.round(subtotal * 0.05 * 100) / 100; // 5% platform fee

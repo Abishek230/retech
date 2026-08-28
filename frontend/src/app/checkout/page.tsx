@@ -80,18 +80,26 @@ export default function CheckoutPage() {
         setCart(active);
 
         // 2. Fetch PaymentIntent
-        const intentRes = await fetch(`${API_BASE}/checkout/intent`, {
-          method: "POST",
-          headers,
-          credentials: "include",
-          body: JSON.stringify({
-            items: active?.items || [],
-          }),
-        });
+        if (active?.items?.length > 0) {
+          const intentRes = await fetch(`${API_BASE}/checkout/intent`, {
+            method: "POST",
+            headers,
+            credentials: "include",
+            body: JSON.stringify({
+              items: active.items.map((i: any) => ({
+                listingId: i.listingId,
+                quantity: i.quantity || 1,
+              })),
+            }),
+          });
 
-        if (intentRes.ok) {
-          const intentResp = await intentRes.json();
-          setIntentData(intentResp.data);
+          if (intentRes.ok) {
+            const intentResp = await intentRes.json();
+            setIntentData(intentResp.data);
+            if (intentResp.data?.cart && intentResp.data.cart.items?.length > 0) {
+              setCart(intentResp.data.cart);
+            }
+          }
         }
       } catch (err: any) {
         console.warn("Checkout init note:", err.message);
@@ -101,7 +109,7 @@ export default function CheckoutPage() {
     }
 
     initCheckout();
-  }, [API_BASE, accessToken]);
+  }, [API_BASE, accessToken, contextCart]);
 
   const activeCart = (cart?.items?.length ? cart : contextCart) || {
     items: [],
@@ -368,29 +376,37 @@ export default function CheckoutPage() {
 
               {/* Items Mini List */}
               <div className="space-y-3 max-h-56 overflow-y-auto">
-                {cart?.items?.map((item: any) => (
-                  <div key={item.listingId} className="flex items-center gap-3">
-                    <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-cream-200 bg-cream-50 shrink-0">
-                      <Image
-                        src={getDeviceImageUrl(item.listing?.images)}
-                        alt="Item"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-bold text-brown-900 truncate">
-                        {item.listing?.title}
-                      </h5>
-                      <span className="text-[10px] text-brown-500">
-                        Qty: {item.quantity} • {item.listing?.condition}
+                {activeCart?.items?.map((item: any, idx: number) => {
+                  const itemPrice = Number(item.listing?.price) || (item.subtotal ? Number(item.subtotal) / (item.quantity || 1) : 0);
+                  const itemSubtotal = item.subtotal || (itemPrice * (item.quantity || 1));
+                  const itemTitle = item.listing?.title || item.title || "Certified Refurbished Device";
+                  const itemCondition = item.listing?.condition || item.condition || "PRISTINE";
+                  const itemImages = item.listing?.images || item.images;
+
+                  return (
+                    <div key={item.listingId || `item-${idx}`} className="flex items-center gap-3">
+                      <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-cream-200 bg-cream-50 shrink-0">
+                        <Image
+                          src={getDeviceImageUrl(itemImages)}
+                          alt="Item"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-bold text-brown-900 truncate">
+                          {itemTitle}
+                        </h5>
+                        <span className="text-[10px] text-brown-500">
+                          Qty: {item.quantity || 1} • {itemCondition}
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold text-burgundy">
+                        {formatPrice(itemSubtotal)}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-burgundy">
-                      {formatPrice(item.subtotal)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="border-t border-cream-200 pt-3 space-y-2 text-brown-700">

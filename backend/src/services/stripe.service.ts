@@ -44,7 +44,11 @@ export class CheckoutService {
     if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
       for (const item of providedItems) {
         if (item.listingId) {
-          await CartService.addToCart(userId, item.listingId, item.quantity || 1);
+          try {
+            await CartService.addToCart(userId, item.listingId, item.quantity || 1);
+          } catch (err: any) {
+            console.warn("⚠️ [Stripe] Skipping stale item during intent sync:", item.listingId);
+          }
         }
       }
       cart = await CartService.getCart(userId);
@@ -53,8 +57,10 @@ export class CheckoutService {
     if (cart.items.length === 0) {
       const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
       if (activeListing) {
-        await CartService.addToCart(userId, activeListing.id, 1);
-        cart = await CartService.getCart(userId);
+        try {
+          await CartService.addToCart(userId, activeListing.id, 1);
+          cart = await CartService.getCart(userId);
+        } catch {}
       }
     }
     const fees = calculateCheckoutFees(cart.subtotal);
@@ -114,7 +120,11 @@ export class CheckoutService {
     if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
       for (const item of providedItems) {
         if (item.listingId) {
-          await CartService.addToCart(userId, item.listingId, item.quantity || 1);
+          try {
+            await CartService.addToCart(userId, item.listingId, item.quantity || 1);
+          } catch (err: any) {
+            console.warn("⚠️ [Stripe] Skipping stale item during order confirm sync:", item.listingId);
+          }
         }
       }
       cart = await CartService.getCart(userId);
@@ -123,8 +133,10 @@ export class CheckoutService {
     if (cart.items.length === 0) {
       const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
       if (activeListing) {
-        await CartService.addToCart(userId, activeListing.id, 1);
-        cart = await CartService.getCart(userId);
+        try {
+          await CartService.addToCart(userId, activeListing.id, 1);
+          cart = await CartService.getCart(userId);
+        } catch {}
       }
     }
 

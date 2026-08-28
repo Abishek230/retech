@@ -52,8 +52,9 @@ function calculateCartTotals(items: CartItem[]): CartData {
 
   for (const item of items) {
     const qty = item.quantity || 1;
-    const price = item.listing?.price || 0;
-    subtotal += price * qty;
+    const price = Number(item.listing?.price) || Number(item.subtotal ? item.subtotal / qty : 0) || 0;
+    const itemSubtotal = item.subtotal || (price * qty);
+    subtotal += itemSubtotal;
     count += qty;
     const itemCo2 = item.listing?.device?.sustainabilityRecords?.[0]?.co2SavedKg || 54.0;
     carbon += itemCo2 * qty;
@@ -94,7 +95,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) {
+            // Keep items that have valid listingId and valid positive price
+            return parsed.filter((i) => i && i.listingId && (i.listing?.price || i.subtotal));
+          }
         }
       } catch {}
     }
@@ -147,24 +151,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
 
+    const price = Number(listing.price) || 0;
+    const itemSubtotal = price * quantity;
+
     // 1. Optimistically update local cart immediately for zero-latency UI
-    const existing = cart.items.find((i) => i.listingId === listing.id);
+    const existingIndex = cart.items.findIndex((i) => i.listingId === listing.id);
     let updatedItems: CartItem[] = [];
 
-    if (existing) {
+    if (existingIndex >= 0) {
       updatedItems = cart.items.map((i) =>
         i.listingId === listing.id
-          ? { ...i, quantity: i.quantity + quantity, subtotal: (i.quantity + quantity) * (listing.price || 0) }
+          ? {
+              ...i,
+              quantity: i.quantity + quantity,
+              subtotal: (i.quantity + quantity) * price,
+              listing: { ...listing, price },
+            }
           : i
       );
     } else {
       updatedItems = [
-        ...cart.items,
+        ...cart.items.filter((i) => i.listingId !== listing.id),
         {
           listingId: listing.id,
           quantity,
-          subtotal: quantity * (listing.price || 0),
-          listing,
+          subtotal: itemSubtotal,
+          listing: { ...listing, price },
         },
       ];
     }
@@ -193,7 +205,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.data) {
+        if (data.data && data.data.items?.length > 0) {
           setCart(data.data);
           saveLocalCart(data.data.items);
         }
