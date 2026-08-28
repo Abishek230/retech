@@ -1050,7 +1050,7 @@ export async function getListingByIdHandler(req: Request, res: Response, next: N
 // ----------------------------------------------------
 export async function uploadListingImagesHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const files = req.files as Express.Multer.File[];
+    const files = (req.files as any[]) || [];
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: "No image files provided." });
     }

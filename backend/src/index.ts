@@ -3,7 +3,7 @@ import { createApp } from "./app";
 import { env } from "./config/env";
 import { initSocketIO } from "./socket";
 import { redisClient } from "./config/redis";
-import { getDb } from "./config/db";
+import { getDb } from "@retech/database";
 async function bootstrap() {
   const app = createApp();
   const server = http.createServer(app);
