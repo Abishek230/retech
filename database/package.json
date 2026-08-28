@@ -1,0 +1,29 @@
+{
+  "name": "@retech/database",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "db:setup": "tsx src/setup.ts",
+    "db:seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.4",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^6.0.1",
+    "uuid": "^14.0.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/sqlite3": "^3.1.11",
+    "@types/uuid": "^10.0.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5"
+  }
+}

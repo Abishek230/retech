@@ -1,0 +1,20 @@
+{
+  "name": "retech-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ReTech — AI-Powered Refurbished Electronics Marketplace",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:database": "npm run build --prefix database",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build": "npm run build:database && npm run build:backend && npm run build:frontend",
+    "db:setup": "npm run db:setup --prefix database",
+    "db:seed": "npm run db:seed --prefix database"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

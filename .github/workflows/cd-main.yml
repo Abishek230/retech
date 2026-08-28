@@ -1,0 +1,76 @@
+name: ReTech CD - Production Deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  e2e-and-build:
+    name: Run E2E & Build Containers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma & Build Database
+        run: |
+          npm --prefix database run generate
+          npm --prefix database run build
+
+      - name: Run E2E Test Workflows
+        run: npm --prefix backend test tests/e2e/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push Backend Container Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/retech-backend:$IMAGE_TAG -f backend/Dockerfile .
+          docker push $ECR_REGISTRY/retech-backend:$IMAGE_TAG
+
+      - name: Build & Push Frontend Container Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/retech-frontend:$IMAGE_TAG -f frontend/Dockerfile .
+          docker push $ECR_REGISTRY/retech-frontend:$IMAGE_TAG
+
+      - name: Deploy to Amazon ECS Fargate
+        run: |
+          aws ecs update-service --cluster retech-prod-cluster --service retech-backend-service --force-new-deployment
+          aws ecs update-service --cluster retech-prod-cluster --service retech-frontend-service --force-new-deployment
+
+      - name: Run Production Smoke Health Checks
+        run: |
+          curl -f https://api.retech.eco/health || exit 1
+          curl -f https://retech.eco || exit 1
+
+      - name: Notify Slack Deployment Channel
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

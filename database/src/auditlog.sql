@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS AuditLog (
+  id TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  action TEXT NOT NULL,
+  entity TEXT NOT NULL,
+  entityId TEXT,
+  details TEXT,
+  ipAddress TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userId) REFERENCES User(id) ON DELETE CASCADE
+);

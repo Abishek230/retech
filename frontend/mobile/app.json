@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "ReTech",
+    "slug": "retech-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "retech",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F3EA"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "eco.retech.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ReTech requires camera access to scan hardware Digital Life Passport QR codes and recognize devices for quick listing."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#641F2A"
+      },
+      "package": "eco.retech.mobile",
+      "permissions": [
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow ReTech to use your camera for Passport QR verification."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
