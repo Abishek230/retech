@@ -301,7 +301,7 @@ function MarketplaceContent() {
       {/* ==================================================== */}
       <div className="border-b border-cream-200 bg-white sticky top-16 z-20 shadow-xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 space-y-2.5">
-          
+
           {/* A. CATEGORY FILTER ROW */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
             {CATEGORIES.map((cat) => {
@@ -311,11 +311,10 @@ function MarketplaceContent() {
                 <button
                   key={cat.id}
                   onClick={() => handleSelectCategory(cat.id)}
-                  className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                    isSelected
+                  className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${isSelected
                       ? "bg-burgundy text-white shadow-md shadow-burgundy/20 scale-[1.02]"
                       : "bg-cream-50 text-brown-800 border border-cream-200 hover:bg-cream-100 hover:text-burgundy hover:border-cream-300"
-                  }`}
+                    }`}
                 >
                   <Icon className={`h-4 w-4 ${isSelected ? "text-white" : "text-burgundy"}`} />
                   <span>{cat.label}</span>
@@ -331,11 +330,10 @@ function MarketplaceContent() {
             </span>
             <button
               onClick={() => handleSelectBrand("All")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                selectedBrand === "All"
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${selectedBrand === "All"
                   ? "bg-brown-950 text-white shadow-xs"
                   : "bg-cream-100 text-brown-700 hover:bg-cream-200"
-              }`}
+                }`}
             >
               All Brands
             </button>
@@ -345,11 +343,10 @@ function MarketplaceContent() {
                 <button
                   key={brand}
                   onClick={() => handleSelectBrand(brand)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 border cursor-pointer ${
-                    isSelected
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 border cursor-pointer ${isSelected
                       ? "bg-burgundy text-white border-burgundy shadow-xs"
                       : "bg-white border-cream-200 text-brown-800 hover:bg-cream-100 hover:border-cream-300"
-                  }`}
+                    }`}
                 >
                   {brand}
                 </button>
@@ -444,11 +441,10 @@ function MarketplaceContent() {
               <div className="flex items-center bg-cream-100 rounded-lg p-0.5 border border-cream-200">
                 <button
                   onClick={() => setViewMode("grouped")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === "grouped"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${viewMode === "grouped"
                       ? "bg-white text-burgundy shadow-xs"
                       : "text-brown-600 hover:text-brown-900"
-                  }`}
+                    }`}
                   title="Organize products by brand sections"
                 >
                   <Layers className="h-3.5 w-3.5" />
@@ -456,11 +452,10 @@ function MarketplaceContent() {
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === "grid"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${viewMode === "grid"
                       ? "bg-white text-burgundy shadow-xs"
                       : "text-brown-600 hover:text-brown-900"
-                  }`}
+                    }`}
                   title="Fluid grid view"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
@@ -605,8 +600,8 @@ function ProductCard({
                   item.condition === "PRISTINE"
                     ? "pristine"
                     : item.condition === "EXCELLENT"
-                    ? "excellent"
-                    : "good"
+                      ? "excellent"
+                      : "good"
                 }
               >
                 {item.condition === "PRISTINE" ? "Grade A+ Like New" : item.condition}

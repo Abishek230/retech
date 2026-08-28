@@ -54,8 +54,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, isPublicPath, pathname, router, user]);
 
-  // Loading state while resolving auth
-  if (isLoading) {
+  // Loading state while resolving auth on protected pages
+  if (isLoading && !isPublicPath) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-cream-50">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-burgundy/10 text-burgundy shadow-inner">

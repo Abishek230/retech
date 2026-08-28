@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(savedToken);
       fetchCurrentUser(savedToken);
     } else {
-      refreshSession();
+      setIsLoading(false);
     }
   }, []);
 
