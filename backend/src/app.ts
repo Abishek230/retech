@@ -35,7 +35,19 @@ export function createApp(): Express {
   );
   app.use(
     cors({
-      origin: [env.FRONTEND_URL, "http://localhost:3000"],
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (
+          origin.includes("localhost") ||
+          origin.includes("127.0.0.1") ||
+          origin.endsWith(".vercel.app") ||
+          origin === env.FRONTEND_URL
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true,
     })
   );
