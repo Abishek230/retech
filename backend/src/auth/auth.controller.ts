@@ -513,7 +513,7 @@ export async function firebaseAuthHandler(req: Request, res: Response, next: Nex
     if (!user) {
       const userId = uuidv4();
       await db.run(
-        `INSERT INTO User (id, email, passwordHash, name, role, avatar) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO User (id, email, passwordHash, name, role, isEmailVerified, avatar) VALUES (?, ?, ?, ?, ?, 1, ?)`,
         [userId, decoded.email.toLowerCase(), "firebase_auth", name, role, avatar || null]
       );
       user = await db.get("SELECT * FROM User WHERE id = ?", [userId]);

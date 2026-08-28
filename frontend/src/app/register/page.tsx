@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { GoogleEmailModal } from "@/components/auth/GoogleEmailModal";
 import {
   RotateCcw,
   Mail,
@@ -31,6 +32,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   // Password requirements state
   const hasMinLength = password.length >= 8;
@@ -78,17 +80,23 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleSignup = () => {
     setErrorMessage(null);
-    const res = await loginWithFirebaseGoogle(role, role === "SELLER" ? businessName : undefined);
+    setIsGoogleModalOpen(true);
+  };
+
+  const handleConfirmGoogleEmail = async (googleEmail: string) => {
+    const res = await loginWithFirebaseGoogle(googleEmail, role, role === "SELLER" ? businessName : undefined);
     if (res.success) {
+      setIsGoogleModalOpen(false);
       if (role === "SELLER") {
         router.push("/seller/dashboard");
       } else {
         router.push("/marketplace");
       }
+      return { success: true };
     } else {
-      setErrorMessage(res.error || "Firebase authentication failed.");
+      return { success: false, error: res.error || "Firebase authentication failed." };
     }
   };
 
@@ -284,6 +292,14 @@ export default function RegisterPage() {
           </CardFooter>
         </Card>
       </div>
+
+      {/* Google Email Verification Modal */}
+      <GoogleEmailModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        initialEmail={email}
+        onConfirm={handleConfirmGoogleEmail}
+      />
     </div>
   );
 }

@@ -34,7 +34,7 @@ interface AuthContextType {
     businessName?: string;
   }) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => Promise<void>;
-  loginWithFirebaseGoogle: (role?: UserRole, businessName?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  loginWithFirebaseGoogle: (email?: string, role?: UserRole, businessName?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   loginWithFirebaseEmail: (email: string, pass: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   sendOtp: (email: string, purpose?: string) => Promise<{ success: boolean; error?: string }>;
   verifyOtp: (
@@ -256,17 +256,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function loginWithFirebaseGoogle(role: UserRole = "BUYER", businessName?: string) {
+  async function loginWithFirebaseGoogle(email?: string, role: UserRole = "BUYER", businessName?: string) {
     try {
       setIsLoading(true);
       const { signInWithGoogleFirebase } = await import("@/lib/firebase");
-      const { idToken } = await signInWithGoogleFirebase();
+      const { idToken } = await signInWithGoogleFirebase(email);
 
       const res = await fetch(`${API_BASE_URL}/auth/firebase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ idToken, role, businessName }),
+        body: JSON.stringify({ idToken, email, role, businessName }),
       });
 
       const data = await res.json();

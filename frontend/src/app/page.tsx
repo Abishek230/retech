@@ -7,8 +7,8 @@ import { useAuth, UserRole } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { OtpModal } from "@/components/auth/OtpModal";
+import { GoogleEmailModal } from "@/components/auth/GoogleEmailModal";
 import {
   RotateCcw,
   Mail,
@@ -37,6 +37,9 @@ function AuthHub() {
 
   // Login Mode: "password" or "otp"
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
+
+  // Google Email Modal state
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   // Form Fields
   const [loginEmail, setLoginEmail] = useState("");
@@ -171,14 +174,21 @@ function AuthHub() {
     }
   };
 
-  // Handle Google Auth
-  const handleGoogleAuth = async () => {
+  // Handle Google Auth (Prompts for email before connecting)
+  const handleGoogleAuth = () => {
     setErrorMessage(null);
-    const res = await loginWithFirebaseGoogle(registerRole, registerRole === "SELLER" ? registerBusinessName : undefined);
+    setIsGoogleModalOpen(true);
+  };
+
+  const handleConfirmGoogleEmail = async (googleEmail: string) => {
+    const roleToUse = activeTab === "register" ? registerRole : "BUYER";
+    const res = await loginWithFirebaseGoogle(googleEmail, roleToUse, roleToUse === "SELLER" ? registerBusinessName : undefined);
     if (res.success) {
+      setIsGoogleModalOpen(false);
       router.push(getDestination(res.user));
+      return { success: true };
     } else {
-      setErrorMessage(res.error || "Google authentication failed.");
+      return { success: false, error: res.error || "Google authentication failed." };
     }
   };
 
@@ -567,6 +577,14 @@ function AuthHub() {
         onResend={async () => {
           return await sendOtp(otpTargetEmail, otpPurpose);
         }}
+      />
+
+      {/* Google Email Verification Modal */}
+      <GoogleEmailModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        initialEmail={activeTab === "register" ? registerEmail : loginEmail}
+        onConfirm={handleConfirmGoogleEmail}
       />
     </div>
   );

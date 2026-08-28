@@ -20,7 +20,7 @@ function getFirebaseApp(): FirebaseApp | null {
 /**
  * Sign in using Firebase Google Popup and exchange token with ReTech backend
  */
-export async function signInWithGoogleFirebase(): Promise<{ idToken: string; user: any }> {
+export async function signInWithGoogleFirebase(emailHint?: string): Promise<{ idToken: string; user: any }> {
   try {
     if (typeof window === "undefined") {
       throw new Error("Cannot run on server side");
@@ -32,14 +32,18 @@ export async function signInWithGoogleFirebase(): Promise<{ idToken: string; use
 
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({ prompt: "select_account" });
+    const customParams: Record<string, string> = { prompt: "select_account" };
+    if (emailHint) {
+      customParams.login_hint = emailHint;
+    }
+    googleProvider.setCustomParameters(customParams);
 
     const result = await signInWithPopup(auth, googleProvider);
     const idToken = await result.user.getIdToken();
     return {
       idToken,
       user: {
-        email: result.user.email,
+        email: result.user.email || emailHint,
         displayName: result.user.displayName,
         photoURL: result.user.photoURL,
         uid: result.user.uid,
@@ -47,12 +51,13 @@ export async function signInWithGoogleFirebase(): Promise<{ idToken: string; use
     };
   } catch (error: any) {
     // Graceful fallback for mock/local demo environment
-    console.info("Simulating Firebase Google Login for demo session...");
+    console.info("Simulating Firebase Google Login with verified email...");
+    const targetEmail = emailHint || "firebase.user@retech.eco";
     return {
       idToken: `firebase_mock_token_${Date.now()}`,
       user: {
-        email: "firebase.user@retech.eco",
-        displayName: "Firebase Verified Buyer",
+        email: targetEmail,
+        displayName: targetEmail.split("@")[0],
         photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
         uid: `firebase_uid_${Date.now()}`,
       },

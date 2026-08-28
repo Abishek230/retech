@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { OtpModal } from "@/components/auth/OtpModal";
+import { GoogleEmailModal } from "@/components/auth/GoogleEmailModal";
 import { RotateCcw, Mail, Lock, Sparkles, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 
 function LoginForm() {
@@ -21,6 +22,7 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
   const redirectUrl = searchParams.get("redirect");
 
@@ -76,13 +78,19 @@ function LoginForm() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setErrorMessage(null);
-    const res = await loginWithFirebaseGoogle("BUYER");
+    setIsGoogleModalOpen(true);
+  };
+
+  const handleConfirmGoogleEmail = async (googleEmail: string) => {
+    const res = await loginWithFirebaseGoogle(googleEmail, "BUYER");
     if (res.success) {
+      setIsGoogleModalOpen(false);
       router.push(getDestination(res.user));
+      return { success: true };
     } else {
-      setErrorMessage(res.error || "Firebase authentication failed.");
+      return { success: false, error: res.error || "Firebase authentication failed." };
     }
   };
 
@@ -306,6 +314,14 @@ function LoginForm() {
         onResend={async () => {
           return await sendOtp(email, "LOGIN");
         }}
+      />
+
+      {/* Google Email Verification Modal */}
+      <GoogleEmailModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        initialEmail={email}
+        onConfirm={handleConfirmGoogleEmail}
       />
     </div>
   );
