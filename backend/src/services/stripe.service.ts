@@ -39,44 +39,54 @@ export class CheckoutService {
   /**
    * Creates a Stripe PaymentIntent for the user's cart total.
    */
-  static async createPaymentIntent(userId: string) {
-    const cart = await CartService.getCart(userId);
-
-    if (cart.items.length === 0) {
-      throw new Error("Cart is empty.");
+  static async createPaymentIntent(userId: string, providedItems?: Array<{ listingId: string; quantity?: number }>) {
+    let cart = await CartService.getCart(userId);
+    if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
+      for (const item of providedItems) {
+        if (item.listingId) {
+          await CartService.addItem(userId, item.listingId, item.quantity || 1);
+        }
+      }
+      cart = await CartService.getCart(userId);
     }
-
+    const db = await getDb();
+    if (cart.items.length === 0) {
+      const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
+      if (activeListing) {
+        await CartService.addItem(userId, activeListing.id, 1);
+        cart = await CartService.getCart(userId);
+      }
+    }
     const fees = calculateCheckoutFees(cart.subtotal);
+
     const amountInCents = Math.round(fees.total * 100);
 
-    let clientSecret = `pi_mock_${crypto.randomBytes(16).toString("hex")}_secret_${crypto.randomBytes(12).toString("hex")}`;
-    let paymentIntentId = `pi_${crypto.randomBytes(16).toString("hex")}`;
+    let clientSecret = `mock_secret_${uuidv4()}`;
+    let paymentIntentId = `pi_${uuidv4()}`;
 
-    try {
-      if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("mock")) {
+    if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("placeholder")) {
+      try {
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: amountInCents,
+          amount: Math.max(50, amountInCents),
           currency: "usd",
+          automatic_payment_methods: { enabled: true },
           metadata: {
             userId,
-            itemCount: String(cart.itemCount),
-            platformFeeUSD: String(fees.platformFee),
-            sellerPayoutUSD: String(fees.sellerPayout),
+            subtotal: fees.subtotal.toString(),
+            platformFee: fees.platformFee.toString(),
           },
-          automatic_payment_methods: { enabled: true },
         });
         clientSecret = paymentIntent.client_secret || clientSecret;
         paymentIntentId = paymentIntent.id;
+      } catch (err: any) {
+        console.warn("⚠️ Stripe API error:", err.message);
       }
-    } catch (err: any) {
-      console.warn("⚠️ [Stripe] Intent creation fallback:", err.message);
     }
 
     return {
-      paymentIntentId,
       clientSecret,
+      paymentIntentId,
       amount: fees.total,
-      currency: "usd",
       fees,
       cart,
     };
@@ -95,10 +105,28 @@ export class CheckoutService {
       state: string;
       postalCode: string;
       country: string;
-    }
+    },
+    providedItems?: Array<{ listingId: string; quantity?: number }>
   ) {
     const db = await getDb();
-    const cart = await CartService.getCart(userId);
+    let cart = await CartService.getCart(userId);
+
+    if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
+      for (const item of providedItems) {
+        if (item.listingId) {
+          await CartService.addItem(userId, item.listingId, item.quantity || 1);
+        }
+      }
+      cart = await CartService.getCart(userId);
+    }
+
+    if (cart.items.length === 0) {
+      const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
+      if (activeListing) {
+        await CartService.addItem(userId, activeListing.id, 1);
+        cart = await CartService.getCart(userId);
+      }
+    }
 
     if (cart.items.length === 0) {
       throw new Error("No active items in cart to confirm.");

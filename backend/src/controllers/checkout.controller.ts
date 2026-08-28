@@ -13,7 +13,8 @@ function resolveUserId(req: Request): string {
 export async function createPaymentIntentHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = resolveUserId(req);
-    const intentData = await CheckoutService.createPaymentIntent(userId);
+    const { items } = req.body || {};
+    const intentData = await CheckoutService.createPaymentIntent(userId, items);
 
     return res.status(201).json({
       success: true,
@@ -31,12 +32,13 @@ export async function createPaymentIntentHandler(req: Request, res: Response, ne
 export async function confirmCheckoutHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = resolveUserId(req);
-    const { paymentIntentId, shippingAddress } = req.body;
+    const { paymentIntentId, shippingAddress, items } = req.body;
 
     const result = await CheckoutService.confirmOrder(
       userId,
       paymentIntentId || `pi_manual_${Date.now()}`,
-      shippingAddress
+      shippingAddress,
+      items
     );
 
     return res.status(201).json({

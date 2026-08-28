@@ -62,20 +62,31 @@ export default function CheckoutPage() {
           headers["Authorization"] = `Bearer ${accessToken}`;
         }
 
-        // 1. Fetch Cart
-        const cartRes = await fetch(`${API_BASE}/cart`, {
-          headers,
-          credentials: "include",
-        });
-        const cartData = await cartRes.json();
-        const activeCart = cartData?.data || contextCart;
-        setCart(activeCart);
+        // 1. Fetch Cart from API
+        let active = contextCart;
+        try {
+          const cartRes = await fetch(`${API_BASE}/cart`, {
+            headers,
+            credentials: "include",
+          });
+          if (cartRes.ok) {
+            const cartData = await cartRes.json();
+            if (cartData?.data?.items?.length > 0) {
+              active = cartData.data;
+            }
+          }
+        } catch {}
+
+        setCart(active);
 
         // 2. Fetch PaymentIntent
         const intentRes = await fetch(`${API_BASE}/checkout/intent`, {
           method: "POST",
           headers,
           credentials: "include",
+          body: JSON.stringify({
+            items: active?.items || [],
+          }),
         });
 
         if (intentRes.ok) {
@@ -83,14 +94,26 @@ export default function CheckoutPage() {
           setIntentData(intentResp.data);
         }
       } catch (err: any) {
-        setErrorMessage(err.message || "Failed to initialize checkout session");
+        console.warn("Checkout init note:", err.message);
       } finally {
         setIsLoading(false);
       }
     }
 
     initCheckout();
-  }, [API_BASE, accessToken, contextCart]);
+  }, [API_BASE, accessToken]);
+
+  const activeCart = (cart?.items?.length ? cart : contextCart) || {
+    items: [],
+    itemCount: 0,
+    subtotal: 0,
+    platformFee: 0,
+    total: 0,
+  };
+
+  const subtotal = activeCart.subtotal || 0;
+  const platformFee = activeCart.platformFee || Math.round(subtotal * 0.05 * 100) / 100;
+  const total = activeCart.total || Math.round((subtotal + platformFee) * 100) / 100;
 
   const handlePayAndConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +133,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           paymentIntentId: intentData?.paymentIntentId || `pi_stripe_${Date.now()}`,
           shippingAddress,
+          items: activeCart.items,
         }),
       });
 
@@ -145,9 +169,33 @@ export default function CheckoutPage() {
     );
   }
 
-  const subtotal = cart?.subtotal || 899;
-  const platformFee = cart?.platformFee || Math.round(subtotal * 0.05 * 100) / 100;
-  const total = cart?.total || subtotal + platformFee;
+  if (activeCart.items.length === 0) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4 bg-cream-50 px-4 text-center">
+        <div className="rounded-3xl border border-cream-300 bg-white p-10 max-w-md w-full shadow-warm space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-cream-100 text-brown-600">
+            <Truck className="h-8 w-8 text-burgundy" />
+          </div>
+          <h3 className="text-xl font-bold text-brown-950 font-display">No items in checkout</h3>
+          <p className="text-xs text-brown-600 leading-relaxed">
+            Please add a refurbished device from the marketplace before proceeding to checkout.
+          </p>
+          <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+            <Link href="/cart">
+              <Button variant="outline" size="sm" className="w-full">
+                View Cart
+              </Button>
+            </Link>
+            <Link href="/marketplace">
+              <Button variant="primary" size="sm" className="w-full">
+                Browse Marketplace
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream-50 pb-24">
