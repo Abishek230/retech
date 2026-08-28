@@ -38,7 +38,7 @@ export async function registerHandler(req: Request, res: Response, next: NextFun
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: "An account with this email address already exists.",
+        error: "An account with this email address already exists. Please login instead.",
       });
     }
 
@@ -50,13 +50,13 @@ export async function registerHandler(req: Request, res: Response, next: NextFun
     const sellerProfileId = uuidv4();
     const cartId = uuidv4();
 
-    // Create user and related entities using transaction
+    // Create user and related entities directly with verified status
     await db.run("BEGIN TRANSACTION");
 
     try {
       await db.run(
-        `INSERT INTO User (id, email, passwordHash, name, role, avatar) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO User (id, email, passwordHash, name, role, isEmailVerified, avatar) 
+         VALUES (?, ?, ?, ?, ?, 1, ?)`,
         [userId, email.toLowerCase(), passwordHash, name, role, avatar || null]
       );
 
@@ -81,12 +81,7 @@ export async function registerHandler(req: Request, res: Response, next: NextFun
     const newUser = await db.get("SELECT * FROM User WHERE id = ?", [userId]);
     const sellerProfile = role === Role.SELLER ? await db.get("SELECT * FROM SellerProfile WHERE userId = ?", [userId]) : null;
 
-    // Send OTP email
-    const otp = generate6DigitOtp();
-    await storeOtp(email.toLowerCase(), otp, "REGISTRATION");
-    await sendOtpEmail(email.toLowerCase(), otp, "REGISTRATION");
-
-    // Generate Tokens & Session
+    // Generate Tokens & Session directly (No OTP required)
     const tokens = generateAuthTokens({
       userId: newUser.id,
       email: newUser.email,
@@ -98,14 +93,14 @@ export async function registerHandler(req: Request, res: Response, next: NextFun
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully. Verification OTP dispatched.",
+      message: "Account created successfully.",
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role as Role,
         avatar: newUser.avatar ?? null,
-        isEmailVerified: false,
+        isEmailVerified: true,
         sellerProfile: sellerProfile ?? null,
       },
       tokens: {

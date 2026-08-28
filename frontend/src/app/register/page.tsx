@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { OtpModal } from "@/components/auth/OtpModal";
 import {
   RotateCcw,
   Mail,
@@ -23,7 +22,7 @@ import {
 } from "lucide-react";
 
 export default function RegisterPage() {
-  const { register, sendOtp, verifyOtp, loginWithFirebaseGoogle, isLoading } = useAuth();
+  const { register, loginWithFirebaseGoogle, isLoading } = useAuth();
   const router = useRouter();
 
   const [role, setRole] = useState<UserRole>("BUYER");
@@ -32,7 +31,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
 
   // Password requirements state
   const hasMinLength = password.length >= 8;
@@ -62,15 +60,19 @@ export default function RegisterPage() {
 
     const res = await register({
       name,
-      email,
+      email: email.trim(),
       password,
       role,
       businessName: role === "SELLER" ? businessName : undefined,
     });
 
     if (res.success) {
-      // Trigger OTP modal for instant email verification
-      setIsOtpModalOpen(true);
+      // Direct account creation & redirect without OTP verification
+      if (role === "SELLER") {
+        router.push("/seller/dashboard");
+      } else {
+        router.push("/marketplace");
+      }
     } else {
       setErrorMessage(res.error || "Registration failed. Please try again.");
     }
@@ -282,26 +284,6 @@ export default function RegisterPage() {
           </CardFooter>
         </Card>
       </div>
-
-      {/* OTP Verification Modal */}
-      <OtpModal
-        isOpen={isOtpModalOpen}
-        onClose={() => {
-          setIsOtpModalOpen(false);
-          router.push(role === "SELLER" ? "/seller/dashboard" : "/marketplace");
-        }}
-        email={email}
-        purpose="REGISTRATION"
-        onSuccess={() => {
-          router.push(role === "SELLER" ? "/seller/dashboard" : "/marketplace");
-        }}
-        onVerify={async (otp) => {
-          return await verifyOtp(email, otp, "REGISTRATION");
-        }}
-        onResend={async () => {
-          return await sendOtp(email, "REGISTRATION");
-        }}
-      />
     </div>
   );
 }
