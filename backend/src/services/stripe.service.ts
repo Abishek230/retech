@@ -44,7 +44,7 @@ export class CheckoutService {
     if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
       for (const item of providedItems) {
         if (item.listingId) {
-          await CartService.addItem(userId, item.listingId, item.quantity || 1);
+          await CartService.addToCart(userId, item.listingId, item.quantity || 1);
         }
       }
       cart = await CartService.getCart(userId);
@@ -53,7 +53,7 @@ export class CheckoutService {
     if (cart.items.length === 0) {
       const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
       if (activeListing) {
-        await CartService.addItem(userId, activeListing.id, 1);
+        await CartService.addToCart(userId, activeListing.id, 1);
         cart = await CartService.getCart(userId);
       }
     }
@@ -114,7 +114,7 @@ export class CheckoutService {
     if (cart.items.length === 0 && providedItems && providedItems.length > 0) {
       for (const item of providedItems) {
         if (item.listingId) {
-          await CartService.addItem(userId, item.listingId, item.quantity || 1);
+          await CartService.addToCart(userId, item.listingId, item.quantity || 1);
         }
       }
       cart = await CartService.getCart(userId);
@@ -123,7 +123,7 @@ export class CheckoutService {
     if (cart.items.length === 0) {
       const activeListing = await db.get(`SELECT id FROM DeviceListing WHERE status = 'ACTIVE' ORDER BY createdAt DESC LIMIT 1`);
       if (activeListing) {
-        await CartService.addItem(userId, activeListing.id, 1);
+        await CartService.addToCart(userId, activeListing.id, 1);
         cart = await CartService.getCart(userId);
       }
     }
