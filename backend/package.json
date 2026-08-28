@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0 <=22.x"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -27,13 +30,15 @@
     "nodemailer": "^6.9.13",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.3",
-    "sharp": "^0.33.3",
     "socket.io": "^4.7.5",
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1",
     "stripe": "^15.3.0",
     "uuid": "^14.0.2",
     "zod": "^3.23.8"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
