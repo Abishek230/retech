@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, getDeviceImageUrl } from "@/lib/utils";
+import { ProductSpecsCompact } from "@/components/ui/ProductSpecsCard";
 import {
   Search,
   Star,
@@ -658,6 +659,9 @@ function ProductCard({
               )}
             </div>
           </div>
+
+          {/* Compact Product Technical Specifications */}
+          <ProductSpecsCompact device={item.device} listing={item} />
         </div>
       </div>
 

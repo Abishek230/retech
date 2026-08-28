@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { AgentDecisionCard } from "@/components/agent/AgentDecisionCard";
+import { ProductSpecsDetailed } from "@/components/ui/ProductSpecsCard";
 import { formatPrice, parseImages, DEFAULT_DEVICE_IMAGE } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -360,6 +361,11 @@ export default function ListingDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Complete Technical Specifications Section */}
+        <Card className="border-cream-300 bg-white p-6 shadow-sm rounded-2xl">
+          <ProductSpecsDetailed device={device} listing={listing} />
+        </Card>
 
         {/* Middle Section: AI Diagnostic Decision & Second Life Score */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
