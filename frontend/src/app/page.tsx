@@ -183,12 +183,12 @@ function AuthHub() {
   const handleConfirmGoogleEmail = async (googleEmail: string) => {
     const roleToUse = activeTab === "register" ? registerRole : "BUYER";
     const res = await loginWithFirebaseGoogle(googleEmail, roleToUse, roleToUse === "SELLER" ? registerBusinessName : undefined);
-    if (res.success) {
+    if (res.success && res.user) {
       setIsGoogleModalOpen(false);
-      router.push(getDestination(res.user));
+      router.replace(getDestination(res.user));
       return { success: true };
     } else {
-      return { success: false, error: res.error || "Google authentication failed." };
+      return { success: false, error: res.error || "Google authentication failed. Please try again." };
     }
   };
 

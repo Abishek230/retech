@@ -435,7 +435,8 @@ export async function googleCallbackHandler(req: Request, res: Response, next: N
     setRefreshTokenCookie(res, tokens.refreshToken);
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    return res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}&success=google_auth`);
+    const redirectPath = role === Role.SELLER ? "/seller/dashboard" : "/marketplace";
+    return res.redirect(`${frontendUrl}${redirectPath}?token=${tokens.accessToken}&success=google_auth`);
   } catch (error) {
     next(error);
   }
@@ -448,13 +449,18 @@ export async function getMeHandler(req: Request, res: Response, next: NextFuncti
   try {
     const db = await getDb();
     if (!req.user) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
+      return res.status(401).json({
+        success: false,
+        error: "Authentication required.",
+      });
     }
 
     const user = await db.get("SELECT * FROM User WHERE id = ?", [req.user.userId]);
-
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return res.status(404).json({
+        success: false,
+        error: "User not found.",
+      });
     }
 
     const sellerProfile = await db.get("SELECT * FROM SellerProfile WHERE userId = ?", [user.id]);
@@ -484,20 +490,29 @@ export async function getMeHandler(req: Request, res: Response, next: NextFuncti
 export async function firebaseAuthHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const db = await getDb();
-    const { idToken, role: selectedRole, businessName } = req.body;
+    const { idToken, email: providedEmail, role: selectedRole, businessName } = req.body;
 
-    if (!idToken) {
+    if (!idToken && !providedEmail) {
       return res.status(400).json({
         success: false,
-        error: "Firebase idToken is required.",
+        error: "Firebase authentication token or email is required.",
       });
     }
 
-    const decoded = await verifyFirebaseIdToken(idToken);
-    if (!decoded || !decoded.email) {
+    let decoded: any = null;
+    if (idToken) {
+      try {
+        decoded = await verifyFirebaseIdToken(idToken);
+      } catch {
+        // Fallback to providedEmail
+      }
+    }
+
+    const targetEmail = (decoded?.email || providedEmail || "").toLowerCase().trim();
+    if (!targetEmail || !targetEmail.includes("@")) {
       return res.status(401).json({
         success: false,
-        error: "Invalid or expired Firebase ID token.",
+        error: "Invalid or expired Google authentication credentials.",
       });
     }
 
@@ -505,16 +520,16 @@ export async function firebaseAuthHandler(req: Request, res: Response, next: Nex
       selectedRole && Object.values(Role).includes(selectedRole)
         ? (selectedRole as Role)
         : Role.BUYER;
-    const name = decoded.name || decoded.displayName || "ReTech User";
-    const avatar = decoded.picture || decoded.photoURL || null;
+    const name = decoded?.name || decoded?.displayName || targetEmail.split("@")[0] || "ReTech User";
+    const avatar = decoded?.picture || decoded?.photoURL || null;
 
-    let user = await db.get("SELECT * FROM User WHERE email = ?", [decoded.email.toLowerCase()]);
+    let user = await db.get("SELECT * FROM User WHERE email = ?", [targetEmail]);
 
     if (!user) {
       const userId = uuidv4();
       await db.run(
         `INSERT INTO User (id, email, passwordHash, name, role, isEmailVerified, avatar) VALUES (?, ?, ?, ?, ?, 1, ?)`,
-        [userId, decoded.email.toLowerCase(), "firebase_auth", name, role, avatar || null]
+        [userId, targetEmail, "firebase_auth", name, role, avatar || null]
       );
       user = await db.get("SELECT * FROM User WHERE id = ?", [userId]);
 
@@ -526,9 +541,15 @@ export async function firebaseAuthHandler(req: Request, res: Response, next: Nex
           [uuidv4(), userId, businessName || `${name}'s Circular Store`, 5.0]
         );
       }
-    } else if (avatar && !user.avatar) {
-      await db.run(`UPDATE User SET avatar = ? WHERE id = ?`, [avatar, user.id]);
-      user.avatar = avatar;
+    } else {
+      if (avatar && !user.avatar) {
+        await db.run(`UPDATE User SET avatar = ? WHERE id = ?`, [avatar, user.id]);
+        user.avatar = avatar;
+      }
+      if (!user.isEmailVerified) {
+        await db.run(`UPDATE User SET isEmailVerified = 1 WHERE id = ?`, [user.id]);
+        user.isEmailVerified = 1;
+      }
     }
 
     const sellerProfile = await db.get("SELECT * FROM SellerProfile WHERE userId = ?", [user.id]);

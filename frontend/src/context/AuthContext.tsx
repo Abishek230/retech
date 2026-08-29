@@ -43,6 +43,7 @@ interface AuthContextType {
     purpose?: string
   ) => Promise<{ success: boolean; user?: User; error?: string }>;
   refreshSession: () => Promise<boolean>;
+  setSessionFromToken: (token: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,8 +55,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize session on mount
+  // Initialize session on mount (including checking URL params for OAuth redirect tokens)
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get("token");
+      if (tokenFromUrl) {
+        localStorage.setItem("retech_access_token", tokenFromUrl);
+        setAccessToken(tokenFromUrl);
+        fetchCurrentUser(tokenFromUrl);
+        return;
+      }
+    }
+
     const savedToken = typeof window !== "undefined" ? localStorage.getItem("retech_access_token") : null;
     if (savedToken) {
       setAccessToken(savedToken);
@@ -65,10 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  async function fetchCurrentUser(token: string) {
+  async function fetchCurrentUser(token: string): Promise<boolean> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
@@ -81,28 +93,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
-      } else {
+        return true;
+      } else if (res.status === 401 || res.status === 403) {
         if (typeof window !== "undefined") {
           localStorage.removeItem("retech_access_token");
         }
         setAccessToken(null);
-        await refreshSession();
+        return await refreshSession();
       }
+      return false;
     } catch {
-      setUser(null);
-      setAccessToken(null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("retech_access_token");
-      }
+      // Do not wipe token immediately on transient network latency
+      return false;
     } finally {
       setIsLoading(false);
     }
   }
 
+  async function setSessionFromToken(token: string): Promise<boolean> {
+    setAccessToken(token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("retech_access_token", token);
+    }
+    return await fetchCurrentUser(token);
+  }
+
   async function refreshSession(): Promise<boolean> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: "POST",
@@ -260,13 +279,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       const { signInWithGoogleFirebase } = await import("@/lib/firebase");
-      const { idToken } = await signInWithGoogleFirebase(email);
+      const { idToken, user: googleUser } = await signInWithGoogleFirebase(email);
+      const emailToSend = email || googleUser?.email;
 
       const res = await fetch(`${API_BASE_URL}/auth/firebase`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ idToken, email, role, businessName }),
+        body: JSON.stringify({ idToken, email: emailToSend, role, businessName }),
       });
 
       const data = await res.json();
@@ -333,6 +353,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sendOtp,
         verifyOtp,
         refreshSession,
+        setSessionFromToken,
       }}
     >
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export default function RegisterPage() {
-  const { register, loginWithFirebaseGoogle, isLoading } = useAuth();
+  const { user, register, loginWithFirebaseGoogle, isLoading } = useAuth();
   const router = useRouter();
 
   const [role, setRole] = useState<UserRole>("BUYER");
@@ -33,6 +33,12 @@ export default function RegisterPage() {
   const [businessName, setBusinessName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace(user.role === "SELLER" ? "/seller/dashboard" : "/marketplace");
+    }
+  }, [user, isLoading]);
 
   // Password requirements state
   const hasMinLength = password.length >= 8;
@@ -87,16 +93,13 @@ export default function RegisterPage() {
 
   const handleConfirmGoogleEmail = async (googleEmail: string) => {
     const res = await loginWithFirebaseGoogle(googleEmail, role, role === "SELLER" ? businessName : undefined);
-    if (res.success) {
+    if (res.success && res.user) {
       setIsGoogleModalOpen(false);
-      if (role === "SELLER") {
-        router.push("/seller/dashboard");
-      } else {
-        router.push("/marketplace");
-      }
+      const destination = (res.user.role === "SELLER" || role === "SELLER") ? "/seller/dashboard" : "/marketplace";
+      router.replace(destination);
       return { success: true };
     } else {
-      return { success: false, error: res.error || "Firebase authentication failed." };
+      return { success: false, error: res.error || "Google authentication failed. Please try again." };
     }
   };
 

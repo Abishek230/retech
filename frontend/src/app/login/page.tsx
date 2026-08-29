@@ -12,7 +12,7 @@ import { GoogleEmailModal } from "@/components/auth/GoogleEmailModal";
 import { RotateCcw, Mail, Lock, Sparkles, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 
 function LoginForm() {
-  const { user, login, sendOtp, verifyOtp, loginWithFirebaseGoogle, isLoading } = useAuth();
+  const { user, login, sendOtp, verifyOtp, loginWithFirebaseGoogle, setSessionFromToken, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -35,6 +35,16 @@ function LoginForm() {
     if (role === "ADMIN") return "/admin";
     return "/marketplace";
   };
+
+  // Check URL params for OAuth redirect callback tokens
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get("token");
+    if (tokenFromUrl) {
+      setSessionFromToken(tokenFromUrl).then(() => {
+        router.replace(getDestination());
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isLoading && user) {
