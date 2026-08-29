@@ -95,12 +95,13 @@ function LoginForm() {
 
   const handleConfirmGoogleEmail = async (googleEmail: string) => {
     const res = await loginWithFirebaseGoogle(googleEmail, "BUYER");
-    if (res.success) {
+    if (res.success && res.user) {
       setIsGoogleModalOpen(false);
-      router.push(getDestination(res.user));
+      const destination = getDestination(res.user);
+      window.location.href = destination;
       return { success: true };
     } else {
-      return { success: false, error: res.error || "Firebase authentication failed." };
+      return { success: false, error: res.error || "Google authentication failed. Please try again." };
     }
   };
 

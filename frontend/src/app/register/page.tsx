@@ -96,7 +96,7 @@ export default function RegisterPage() {
     if (res.success && res.user) {
       setIsGoogleModalOpen(false);
       const destination = (res.user.role === "SELLER" || role === "SELLER") ? "/seller/dashboard" : "/marketplace";
-      router.replace(destination);
+      window.location.href = destination;
       return { success: true };
     } else {
       return { success: false, error: res.error || "Google authentication failed. Please try again." };
